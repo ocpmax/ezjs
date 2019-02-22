@@ -81,11 +81,12 @@ let change_nav nav =
   current_nav:= nav;
   change_arg nav
 
-let init navs =
-  match Jsloc.find_arg "nav" with
-  | None -> ()
-  | Some value ->
-    List.iter (fun nav -> if nav.id = value then change_nav nav) navs
+let init ?value navs =
+  let f value = List.iter (fun nav -> if nav.id = value then change_nav nav) navs in
+  match Jsloc.find_arg "nav", value with
+  | None, None -> ()
+  | _, Some value -> f value
+  | Some value, _ -> f value
 
 let update_nav ?(once=true) nav =
   change_nav nav;
@@ -93,10 +94,10 @@ let update_nav ?(once=true) nav =
     nav.first <- false;
     nav.onshow ())
 
-let make_nav ?nb ?once nav =
+let make_nav ?(link=fun id -> a_href ("#nav-content-" ^ id)) ?nb ?once nav =
   let is_active_class =
     if nav.state = Disabled then [] else
-      [ a_user_data "toggle" (kind_str nav.kind); a_href ("#nav-content-" ^ nav.id) ] in
+      [ a_user_data "toggle" (kind_str nav.kind); link nav.id] in
   let is_hidden_attr =
     if nav.state <> Hidden then [] else [ a_style "display:none" ] in
   li ~a:([ a_class (Nav.nav_item :: nav.classes);
